@@ -10,7 +10,13 @@ import ratingRoutes from './controller/rating.js'
 
 const server = express()
 dotenv.config()
-server.use(cors());
+server.use(cors({
+    origin: ['http://localhost:5173'],
+    credentials: true,
+    methons: ['GET','POST']
+
+
+}))
 // Middleware
 server.use(express.json())
 // connection mongodb

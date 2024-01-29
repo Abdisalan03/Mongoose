@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config.js";
+import nodemailer from "nodemailer"
 import userModel from "../models/usersModel.js";
 import userauthenticate from "../middleware/user_authenticate.js";
 
@@ -86,17 +87,71 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// forget paasword
+/// User Forgot - Password
+router.post('/forgot-password', (req, res) => {
+  const {email} = req.body;
+  userModel.findOne({email: email})
+  .then(user => {
+      if(!user) {
+          return res.send({Status: "User not existed"})
+      } 
+      const token = jwt.sign({id: user._id},SECRET_KEY
+        , {expiresIn: "1d"})
+      var transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: "mafiobio700@gmail.com",
+            pass: "aolp patjoxnivuwe",
+          }
+        });
+        
+        var mailOptions = {
+          from: 'youremail@gmail.com',
+          to: user.email,
+          subject: 'Reset Password Link',
+          text: `http://localhost:5173/reset_password/${user._id}/${token}`
+        };
+        
+        transporter.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            return res.send({Status: "Success"})
+          }
+     });
+})
+})
 
 
+
+// User Reset - Password
+
+router.post('/reset-password/:id/:token', (req, res) => {
+  const {id, token} = req.params
+  const {password} = req.body
+
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
+      if(err) {
+          return res.json({Status: "Error with token"})
+      } else {
+          bcrypt.hash(password, 10)
+          .then(hash => {
+              userModel.findByIdAndUpdate({_id: id}, {password: hash})
+              .then(u => res.send({Status: "Success"}))
+              .catch(err => res.send({Status: err}))
+          })
+          .catch(err => res.send({Status: err}))
+ }
+})
+})
 
 
 
 // User - GET
-router.get("/user",userauthenticate,  async (req, res) => {
+router.get("/users",  async (req, res) => {
   try {
 
-    const user = await userModel.findById(req.user.id).select("-password")
+    const user = await userModel.find().select("-password")
 
     if(!user) {
         return res.status(404).json({status: 404, message: "User not found"})
