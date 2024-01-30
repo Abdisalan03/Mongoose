@@ -148,10 +148,10 @@ router.post('/reset-password/:id/:token', (req, res) => {
 
 
 // User - GET
-router.get("/users",  async (req, res) => {
+router.get("/user",userauthenticate,  async (req, res) => {
   try {
 
-    const user = await userModel.find().select("-password")
+    const user = await userModel.findById(req.user.id).select("-password")
 
     if(!user) {
         return res.status(404).json({status: 404, message: "User not found"})
